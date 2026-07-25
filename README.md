@@ -1,5 +1,10 @@
 # mixdist
 
+[![PyPI](https://img.shields.io/pypi/v/mixdist.svg)](https://pypi.org/project/mixdist/)
+[![Python versions](https://img.shields.io/pypi/pyversions/mixdist.svg)](https://pypi.org/project/mixdist/)
+[![CI](https://github.com/tomtomtom1007/mixdist/actions/workflows/ci.yml/badge.svg)](https://github.com/tomtomtom1007/mixdist/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
+
 **Distances, nearest-neighbour search and clustering for mixed numeric/categorical tables.**
 
 *[日本語 README](README.ja.md)*
