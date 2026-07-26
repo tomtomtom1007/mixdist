@@ -45,7 +45,12 @@ short-lived OIDC identity minted by GitHub for this exact repository, workflow f
 
 To cut a release:
 
-1. Bump `version` in `pyproject.toml` **and** `__version__` in `src/mixdist/__init__.py`.
+Nothing is published by pushing. `git push` runs CI; a bare tag does nothing. **Only
+publishing a GitHub release triggers an upload.**
+
+1. Bump `__version__` in `src/mixdist/__init__.py`. That is the *only* place a version is
+   written — `pyproject.toml` reads it via `[tool.hatch.version]`, so the two cannot
+   drift apart.
 2. Move the `## [Unreleased]` entries in `CHANGELOG.md` under the new version with a date.
 3. Commit, then tag and push:
 
@@ -53,12 +58,11 @@ To cut a release:
    git tag -a vX.Y.Z -m "mixdist X.Y.Z" && git push origin main vX.Y.Z
    ```
 
-4. Publish a GitHub release for the tag. That triggers `publish.yml`, which builds,
-   verifies the tag matches the packaged version, runs `twine check --strict`, and
-   uploads.
+4. Publish a GitHub release for the tag. That triggers `publish.yml`, which builds, runs
+   `twine check --strict`, verifies the tag matches the built distributions, and uploads.
 
-The tag/version check exists because **PyPI never accepts a re-upload of a version that
-already exists**. Catching the mismatch in CI is cheap; burning a version number is not.
+The tag check exists because **PyPI never accepts a re-upload of a version that already
+exists**. Catching a forgotten bump in CI is cheap; burning a version number is not.
 
 To exercise the build path without publishing, run the `Publish` workflow manually with
 `dry_run` left at `true` — it builds and checks, then skips the upload job.

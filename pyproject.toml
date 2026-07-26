@@ -4,7 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mixdist"
-version = "0.1.0"
+# Single-sourced from src/mixdist/__init__.py — see [tool.hatch.version] below.
+dynamic = ["version"]
 description = "Distances, nearest-neighbour search and clustering for mixed numeric/categorical tabular data."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -43,6 +44,10 @@ dev = ["pytest>=7", "scikit-learn>=1.1", "ruff>=0.5", "gower>=0.1.2"]
 Homepage = "https://github.com/tomtomtom1007/mixdist"
 Issues = "https://github.com/tomtomtom1007/mixdist/issues"
 Changelog = "https://github.com/tomtomtom1007/mixdist/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+# The one place a release version is written.
+path = "src/mixdist/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mixdist"]

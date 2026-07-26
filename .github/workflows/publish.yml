@@ -36,25 +36,28 @@ jobs:
       - name: Install build tooling
         run: python -m pip install --upgrade pip build twine
 
-      - name: Verify the tag matches the packaged version
-        if: github.event_name == 'release'
-        run: |
-          tag="${GITHUB_REF_NAME#v}"
-          version=$(python -c \
-            "import tomllib, pathlib; \
-             print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
-          echo "tag=$tag packaged=$version"
-          if [ "$tag" != "$version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match pyproject version $version." \
-                 "Bump the version before tagging — PyPI will not accept a re-upload."
-            exit 1
-          fi
-
       - name: Build sdist and wheel
         run: python -m build
 
       - name: Check metadata renders on PyPI
         run: python -m twine check --strict dist/*
+
+      # Checked against the built artifacts rather than a source file, so it holds
+      # whatever the version is derived from.
+      - name: Verify the tag matches the built version
+        if: github.event_name == 'release'
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          ls -1 dist/
+          for artifact in "dist/mixdist-$tag.tar.gz" "dist/mixdist-$tag-py3-none-any.whl"; do
+            if [ ! -f "$artifact" ]; then
+              echo "::error::Tag $GITHUB_REF_NAME did not produce $artifact." \
+                   "Bump __version__ in src/mixdist/__init__.py before tagging —" \
+                   "PyPI will not accept a re-upload of an existing version."
+              exit 1
+            fi
+          done
+          echo "Tag $GITHUB_REF_NAME matches the built distributions."
 
       - uses: actions/upload-artifact@v4
         with:
