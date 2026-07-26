@@ -1,0 +1,83 @@
+name: Publish
+
+# Publishes to PyPI via Trusted Publishing (OIDC). No API token is stored
+# anywhere: PyPI verifies the short-lived identity GitHub mints for this exact
+# repository, workflow file and environment.
+#
+# One-time setup on PyPI (https://pypi.org/manage/project/mixdist/settings/publishing/):
+#   Owner: tomtomtom1007 · Repository: mixdist
+#   Workflow: publish.yml · Environment: pypi
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and check only; do not upload"
+        type: boolean
+        default: true
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build twine
+
+      - name: Verify the tag matches the packaged version
+        if: github.event_name == 'release'
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(python -c \
+            "import tomllib, pathlib; \
+             print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          echo "tag=$tag packaged=$version"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match pyproject version $version." \
+                 "Bump the version before tagging — PyPI will not accept a re-upload."
+            exit 1
+          fi
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Check metadata renders on PyPI
+        run: python -m twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Upload to PyPI
+    needs: build
+    # Skipped on a dry-run dispatch, so the build path stays testable without
+    # burning a version number.
+    if: github.event_name == 'release' || inputs.dry_run == false
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mixdist
+    permissions:
+      id-token: write # the only credential involved
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
